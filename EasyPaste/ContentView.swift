@@ -1,0 +1,75 @@
+//
+//  ContentView.swift
+//  EasyPaste
+//
+//  Created by YuanYuan on 2026/3/21.
+//
+
+import AppKit
+import SwiftUI
+
+struct ContentView: View {
+    @ObservedObject var store: ClipboardStore
+    @State var selectedIndex: Int? = 0
+
+    var body: some View {
+        let reversedItems = Array(store.history.reversed())
+        ScrollViewReader { proxy in
+            VStack(alignment: .leading, spacing: 12) {
+                Text("当前剪切板内容").font(.headline)
+
+                Text(self.store.clipboardText).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(Array(reversedItems.enumerated()), id: \.element.id) { index, item in
+                            let isSelected = self.selectedIndex == index || (self.selectedIndex == nil && index == 0)
+                            let borderColor: Color = isSelected ? .red : .gray
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.createdAt, style: .time).frame(width: 360, alignment: .leading).foregroundStyle(.gray)
+                                Text(item.text).frame(width: 360, height: 40, alignment: .leading).padding(.top, 2)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.store.copyHistoryItem(item)
+                            }
+                            .padding(8).border(borderColor).id(index)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .frame(width: 360, height: 480)
+            .focusable()
+            .onMoveCommand { direction in
+                switch direction {
+                case .up:
+                    selectedIndex = max((selectedIndex ?? 0) - 1, 0)
+                case .down:
+                    selectedIndex = min((selectedIndex ?? 0) + 1, reversedItems.count - 1)
+                default:
+                    break
+                }
+            }.onChange(of: self.selectedIndex) { _, newValue in
+                guard let index = newValue else { return }
+                withAnimation {
+                    proxy.scrollTo(index, anchor: .center)
+                }
+            }.background {
+                Button("") {
+                    guard let index = selectedIndex,
+                          reversedItems.indices.contains(index) else { return }
+                    store.copyHistoryItem(reversedItems[index])
+                }
+                .keyboardShortcut(.defaultAction)
+                .hidden()
+            }
+        }
+    }
+}
+
+#Preview {
+    ContentView(store: ClipboardStore())
+}
