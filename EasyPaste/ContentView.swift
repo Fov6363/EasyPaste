@@ -11,9 +11,14 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var store: ClipboardStore
     @State var selectedIndex: Int? = 0
+    @State private var searchText = ""
 
     var body: some View {
         let reversedItems = Array(store.history.reversed())
+        let filteredItems = searchText.isEmpty ? reversedItems : reversedItems.filter { item in
+            item.text.localizedCaseInsensitiveContains(searchText)
+        }
+
         ScrollViewReader { proxy in
             VStack(alignment: .leading, spacing: 12) {
                 Text("当前剪切板内容").font(.headline)
@@ -21,9 +26,11 @@ struct ContentView: View {
                 Text(self.store.clipboardText).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
+                TextField("搜索历史记录", text: $searchText).textFieldStyle(.roundedBorder)
+
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
-                        ForEach(Array(reversedItems.enumerated()), id: \.element.id) { index, item in
+                        ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
                             let isSelected = self.selectedIndex == index || (self.selectedIndex == nil && index == 0)
                             let borderColor: Color = isSelected ? .red : .gray
 
@@ -48,7 +55,7 @@ struct ContentView: View {
                 case .up:
                     selectedIndex = max((selectedIndex ?? 0) - 1, 0)
                 case .down:
-                    selectedIndex = min((selectedIndex ?? 0) + 1, reversedItems.count - 1)
+                    selectedIndex = min((selectedIndex ?? 0) + 1, filteredItems.count - 1)
                 default:
                     break
                 }
@@ -60,11 +67,13 @@ struct ContentView: View {
             }.background {
                 Button("") {
                     guard let index = selectedIndex,
-                          reversedItems.indices.contains(index) else { return }
-                    store.copyHistoryItem(reversedItems[index])
+                          filteredItems.indices.contains(index) else { return }
+                    store.copyHistoryItem(filteredItems[index])
                 }
                 .keyboardShortcut(.defaultAction)
                 .hidden()
+            }.onChange(of: self.searchText) { _, _ in
+                selectedIndex = filteredItems.isEmpty ? nil : 0
             }
         }
     }
