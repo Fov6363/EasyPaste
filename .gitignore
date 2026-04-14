@@ -1,0 +1,4 @@
+*.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+build/
