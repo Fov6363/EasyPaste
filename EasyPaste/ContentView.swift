@@ -15,6 +15,7 @@ struct ContentView: View {
     @ObservedObject var store: ClipboardStore
     @ObservedObject var panelState: PanelState
     @ObservedObject var coordinator: AppCoordinator
+    @AppStorage("easyPaste.hasDismissedWelcomeGuide") private var hasDismissedWelcomeGuide = false
     @State private var selectedItemID: ClipboardItem.ID?
     @State private var searchText = ""
     @State private var filteredItems: [ClipboardItem] = []
@@ -43,6 +44,9 @@ struct ContentView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     headerView(historyCount: filteredItems.count, totalCount: reversedItems.count)
+                    if shouldShowWelcomeGuide {
+                        welcomeGuide
+                    }
                     if !coordinator.isAccessibilityTrusted {
                         accessibilityBanner
                     }
@@ -183,18 +187,101 @@ struct ContentView: View {
 
             Spacer(minLength: 0)
 
-            Button("开启权限") {
-                coordinator.requestAccessibilityPermission()
+            VStack(alignment: .trailing, spacing: 8) {
+                Button("打开设置") {
+                    coordinator.beginAccessibilitySetup()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(EasyPasteTheme.accent, in: Capsule())
+
+                Button("刷新状态") {
+                    coordinator.refreshAccessibilityStatus()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(EasyPasteTheme.cocoa)
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 11, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(EasyPasteTheme.accent, in: Capsule())
         }
         .padding(12)
         .background(cardBackground(highlighted: true))
+    }
+
+    private var shouldShowWelcomeGuide: Bool {
+        !hasDismissedWelcomeGuide
+    }
+
+    private var welcomeGuide: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("第一次用先做这两步")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(EasyPasteTheme.ink)
+
+                    Text("先让 App 能打开，再给“辅助功能”权限。否则只能复制，不能自动回填。")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(EasyPasteTheme.cocoa)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Button("知道了") {
+                    hasDismissedWelcomeGuide = true
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(EasyPasteTheme.cocoa)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                onboardingStep(index: 1, text: "如果系统拦截，右键 EasyPaste.app 选择“打开”。")
+                onboardingStep(index: 2, text: "在“隐私与安全性 -> 辅助功能”里勾选 EasyPaste。")
+                onboardingStep(index: 3, text: "用全局快捷键唤起，方向键选择，回车回填。")
+            }
+
+            HStack(spacing: 8) {
+                if !coordinator.isAccessibilityTrusted {
+                    Button("去开启权限") {
+                        coordinator.beginAccessibilitySetup()
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(EasyPasteTheme.accent, in: Capsule())
+                }
+
+                Button("稍后再说") {
+                    hasDismissedWelcomeGuide = true
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(EasyPasteTheme.cocoa)
+            }
+        }
+        .padding(12)
+        .background(cardBackground())
+    }
+
+    private func onboardingStep(index: Int, text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("\(index)")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(EasyPasteTheme.accent)
+                .frame(width: 18, height: 18)
+                .background(Color.white.opacity(0.9), in: Circle())
+
+            Text(text)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(EasyPasteTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func searchBar(resultCount: Int) -> some View {

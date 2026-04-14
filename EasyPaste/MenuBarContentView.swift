@@ -91,15 +91,24 @@ struct MenuBarContentView: View {
                 Spacer()
 
                 if !coordinator.isAccessibilityTrusted {
-                    Button("开启权限") {
-                        coordinator.requestAccessibilityPermission()
+                    HStack(spacing: 8) {
+                        Button("打开设置") {
+                            coordinator.beginAccessibilitySetup()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(EasyPasteTheme.accent, in: Capsule())
+
+                        Button("刷新") {
+                            coordinator.refreshAccessibilityStatus()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(EasyPasteTheme.cocoa)
                     }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background(EasyPasteTheme.accent, in: Capsule())
                 }
             }
         }

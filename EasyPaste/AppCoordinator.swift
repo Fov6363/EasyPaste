@@ -127,6 +127,26 @@ final class AppCoordinator: ObservableObject {
         }
     }
 
+    func openAccessibilitySettings() {
+        let urls = [
+            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"),
+            URL(string: "x-apple.systempreferences:com.apple.Settings.PrivacySecurity.extension?Privacy_Accessibility")
+        ].compactMap { $0 }
+
+        for url in urls where NSWorkspace.shared.open(url) {
+            return
+        }
+
+        if let settingsAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.systempreferences") {
+            NSWorkspace.shared.open(settingsAppURL)
+        }
+    }
+
+    func beginAccessibilitySetup() {
+        requestAccessibilityPermission()
+        openAccessibilitySettings()
+    }
+
     private func handleSelection(_ item: ClipboardItem) {
         logger.notice("selection received textLength=\(item.text.count, privacy: .public)")
         store.copyHistoryItem(item)
